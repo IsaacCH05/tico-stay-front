@@ -94,7 +94,12 @@ export default function Home() {
           </p>
 
           {/* Search bar */}
-          <div className="max-w-3xl mx-auto opacity-0 animate-fade-up delay-300" style={{ animationFillMode: 'forwards' }}>
+          <div className="opacity-0 animate-fade-up delay-300" style={{
+            animationFillMode: 'forwards',
+            maxWidth: '860px',
+            margin: '0 auto',
+            padding: '0 1rem',
+          }}>
             <SearchBar />
           </div>
 
@@ -170,8 +175,14 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featured.map((p, i) => (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '1.5rem',
+            alignItems: 'start',
+          }}> 
+
+          {featured.map((p, i) => (
               <div
                 key={p.id}
                 className="opacity-0 animate-fade-up"

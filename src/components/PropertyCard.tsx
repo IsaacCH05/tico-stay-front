@@ -29,6 +29,8 @@ export default function PropertyCard({ property, compact = false }: PropertyCard
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
         boxShadow: 'var(--shadow-sm)',
+        display: 'flex',         
+        flexDirection: 'column',
       }}
     >
       {/* Image */}
@@ -79,7 +81,7 @@ export default function PropertyCard({ property, compact = false }: PropertyCard
       </div>
 
       {/* Info */}
-      <div className="p-4">
+      <div className="p-4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3
             className="font-semibold text-base leading-snug line-clamp-1"
@@ -145,6 +147,7 @@ export default function PropertyCard({ property, compact = false }: PropertyCard
         <Link
           to={`/propiedad/${property.id}`}
           className="btn-primary w-full justify-center text-sm py-2.5"
+          style={{marginTop: 'auto'}}
         >
           Ver detalles
         </Link>
