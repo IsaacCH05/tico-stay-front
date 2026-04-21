@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Leaf, Mail, Lock, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { app } from "../firebase";
 
 export default function Login() {
   const { login } = useAuth()
@@ -11,6 +13,8 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +37,30 @@ export default function Login() {
     navigate(role === 'admin' ? '/admin' : '/')
     setLoading(false)
   }
+
+  const handleGoogleLogin = async () => {
+  try {
+    setLoading(true);
+
+    const result = await signInWithPopup(auth, provider);
+    
+    const user = result.user;
+
+    const token = await user.getIdToken();
+
+    localStorage.setItem("tico-token", token);
+
+    console.log("Usuario Google:", user);
+
+    localStorage.setItem("tico-token", token);
+    window.location.href = "/";
+  } catch (error: any) {
+  console.error("ERROR GOOGLE:", error);
+}
+  finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex">
@@ -173,6 +201,27 @@ export default function Login() {
               {loading ? 'Ingresando…' : 'Iniciar sesión'}
             </button>
           </form>
+
+          {/* Divider */}
+<div className="my-6 flex items-center gap-2">
+  <div className="flex-1 h-px bg-gray-300"></div>
+  <span className="text-xs text-gray-400">o continúa con</span>
+  <div className="flex-1 h-px bg-gray-300"></div>
+</div>
+
+{/* Google Login */}
+<button
+  onClick={handleGoogleLogin}
+  disabled={loading}
+  className="w-full flex items-center justify-center gap-2 py-3 border rounded-lg hover:bg-gray-50 transition"
+>
+  <img
+    src="https://www.svgrepo.com/show/475656/google-color.svg"
+    alt="Google"
+    className="w-5 h-5"
+  />
+  Continuar con Google
+</button>
 
           {/* Quick demo logins */}
           <div className="mt-6">
