@@ -342,7 +342,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
-                  to="/registrarse"
+                  to="/publicar-propiedad"
                   className="btn-primary py-3 px-8"
                   style={{ background: 'white', color: 'var(--forest)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--forest-pale)')}
@@ -350,7 +350,7 @@ export default function Home() {
                 >
                   Publicar mi propiedad
                 </Link>
-                <Link to="/iniciar-sesion" className="btn-secondary py-3 px-8" style={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white' }}>
+                <Link to="/publicar-propiedad" className="btn-secondary py-3 px-8" style={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white' }}>
                   Saber más <ArrowRight size={16} />
                 </Link>
               </div>

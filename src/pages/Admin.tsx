@@ -130,8 +130,8 @@ const EMPTY_FORM: PropForm = {
 const REGIONS_LIST = ['San José','Guanacaste','Caribe','Pacífico Central','Zona Sur','Alajuela','Heredia']
 const TYPES_LIST: Property['type'][] = ['hotel','eco-lodge','villa','cabaña','apartamento']
 
-function mapApiProperty(raw: Record<string, unknown>): Property {
-  return {
+function mapApiProperty(raw: Record<string, unknown>): Property & { status?: string } 
+{  return {
     id:          (raw._id ?? raw.id) as string,
     name:        raw.name as string,
     type:        raw.type as Property['type'],
@@ -149,6 +149,7 @@ function mapApiProperty(raw: Record<string, unknown>): Property {
     maxGuests:   (raw.maxGuests ?? 1) as number,
     bedrooms:    (raw.bedrooms ?? 1) as number,
     bathrooms:   (raw.bathrooms ?? 1) as number,
+    status:      (raw.status ?? 'approved') as string,
   }
 }
 
@@ -209,7 +210,7 @@ function PropertiesTab() {
         setProperties(prev => [mapApiProperty(res.data), ...prev])
       }
       setShowForm(false)
-    } catch (err) {
+    } catch (error) {
       setFormError('Error al guardar. Verifica los datos e intenta de nuevo.')
     } finally {
       setSaving(false)
@@ -388,9 +389,26 @@ function PropertiesTab() {
                         <span style={{ color: 'var(--text-primary)' }}>{p.rating}</span>
                       </span>
                     </td>
-                    <td className="px-4 py-3"><span className="badge badge-green text-xs">Activa</span></td>
+                    <td className="px-4 py-3">
+                      {(p as any).status === 'pending' ? (
+                         <span className="badge badge-gold text-xs">Pendiente</span>
+                      ) : (
+                         <span className="badge badge-green text-xs">Activa</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        {/* Botón rápido para aprobar si está pendiente */}
+                        {(p as any).status === 'pending' && (
+                          <button 
+                            onClick={async () => {
+                              await api.put(`/properties/${p.id}`, { status: 'approved' });
+                              setProperties(prev => prev.map(x => x.id === p.id ? { ...x, status: 'approved' } : x));
+                            }} 
+                            className="btn-primary text-xs py-1 px-2" style={{ background: 'var(--forest-light)' }} title="Aprobar">
+                            <CheckCircle size={14} />
+                          </button>
+                        )}
                         <button onClick={() => openEdit(p)} className="btn-ghost p-1.5" title="Editar"><Edit2 size={14} /></button>
                         <button onClick={() => navigate(`/propiedad/${p.id}`)} className="btn-ghost p-1.5" title="Ver"><Eye size={14} /></button>
                         <button onClick={() => handleDelete(p)} className="btn-ghost p-1.5" style={{ color: '#ef4444' }} title="Eliminar">
