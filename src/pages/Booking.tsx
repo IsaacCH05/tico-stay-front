@@ -108,7 +108,7 @@ const handleConfirm = async () => {
       setSuccess(true)
     } catch (error: any) {
       console.error("Error del servidor:", error)
-      alert("El servidor rechazó la reserva. Revisa la consola de tu backend para ver el error exacto.")
+      alert("El servidor rechazó la reserva. Por favor, intenta de nuevo más tarde.")
     } finally {
       setLoading(false)
     }
