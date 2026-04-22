@@ -65,7 +65,7 @@ function mapApiProp(raw: Record<string, unknown>): Property {
 }
 
 export default function Properties() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const query    = searchParams.get('q') ?? ''
   const regionQP = searchParams.get('region') ?? ''
 
@@ -131,7 +131,10 @@ export default function Properties() {
     (filters.ecoOnly ? 1 : 0) + (filters.minRating > 0 ? 1 : 0) +
     filters.amenities.length + (filters.priceMax < 1000 ? 1 : 0)
 
-  const resetFilters = () => setFilters(DEFAULT_FILTERS)
+  const resetFilters = () => {
+  setFilters(DEFAULT_FILTERS)
+  setSearchParams({})
+  }
 
   const SidebarContent = () => (
     <aside className="w-full">
