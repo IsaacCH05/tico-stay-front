@@ -59,18 +59,18 @@ export default function SearchBar({ inline = false, initialValues = {} }: Search
 
   return (
     <div
-      className="w-full rounded-[var(--radius-xl)] overflow-hidden"
+      className="w-full rounded-[var(--radius-xl)]"
       style={{
         background: 'rgba(255,255,255,0.95)',
         backdropFilter: 'blur(20px)',
         boxShadow: 'var(--shadow-xl)',
       }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] divide-y md:divide-y-0 md:divide-x divide-gray-200">
         {/* Location */}
         <div className="flex items-center gap-3 px-5 py-4">
           <MapPin size={20} style={{ color: 'var(--forest-mid)', flexShrink: 0 }} />
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-[120px]">
             <label className="block text-xs font-semibold mb-0.5" style={{ color: 'var(--forest)' }}>
               Destino
             </label>
@@ -122,7 +122,7 @@ export default function SearchBar({ inline = false, initialValues = {} }: Search
           </div>
         </div>
 
-        {/* Guests + Search */}
+        {/* Guests */}
         <div className="flex items-center gap-3 px-5 py-3">
           <Users size={20} style={{ color: 'var(--forest-mid)', flexShrink: 0 }} />
           <div className="flex-1">
@@ -140,14 +140,19 @@ export default function SearchBar({ inline = false, initialValues = {} }: Search
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Search button */}
+        <div className="flex items-center justify-center px-4s py-3">
           <button
             onClick={handleSearch}
-            className="btn-primary text-sm py-2.5 px-5 shrink-0"
+            className="btn-primary text-sm py-2.5 px-5 whitespace-nowrap"
           >
             <Search size={16} />
-            <span className="hidden lg:inline">Buscar</span>
+            <span>Buscar</span>
           </button>
         </div>
+
       </div>
     </div>
   )

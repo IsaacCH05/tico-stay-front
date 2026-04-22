@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X, ChevronDown, ChevronUp, Grid3X3, List, Search } from 'lucide-react'
 import PropertyCard from '../components/PropertyCard'
 import SearchBar from '../components/SearchBar'
-import { PROPERTIES, REGIONS, type Property } from '../data/properties'
+import api from '../api'
+import { REGIONS, type Property } from '../data/properties'
 
 type SortKey = 'relevance' | 'price-asc' | 'price-desc' | 'rating'
 
@@ -45,6 +46,11 @@ export default function Properties() {
   const [searchParams] = useSearchParams()
   const query    = searchParams.get('q') ?? ''
   const regionQP = searchParams.get('region') ?? ''
+  const [properties, setProperties] = useState<Property[]>([])
+
+  useEffect(() => {
+    api.get<Property[]>('/properties').then(res => setProperties(res.data)).catch(console.error);
+  }, [])
 
   const [filters, setFilters] = useState<Filters>({
     ...DEFAULT_FILTERS,
@@ -61,7 +67,7 @@ export default function Properties() {
     setExpandedSections(s => ({ ...s, [k]: !s[k] }))
 
   const results = useMemo(() => {
-    let list = [...PROPERTIES]
+    let list = [...properties]
     if (query) {
       const q = query.toLowerCase()
       list = list.filter(p =>

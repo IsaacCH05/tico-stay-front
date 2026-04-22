@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Leaf, Award, Shield, Clock, ChevronRight, MapPin } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import PropertyCard from '../components/PropertyCard'
-import { PROPERTIES, REGIONS } from '../data/properties'
+import api from '../api'
+import { REGIONS, type Property } from '../data/properties'
 
 const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1501117716987-c8c394bb29df?w=1600&q=85',
@@ -22,9 +23,11 @@ const REGION_IMAGES: Record<string, string> = {
 
 export default function Home() {
   const [heroIdx, setHeroIdx] = useState(0)
-  const featured = PROPERTIES.filter(p => p.featured).slice(0, 3)
+  const [properties, setProperties] = useState<Property[]>([])
+  const featured = properties.filter(p => p.featured).slice(0, 3)
 
   useEffect(() => {
+    api.get<Property[]>('/properties').then(res => setProperties(res.data)).catch(console.error);
     const t = setInterval(() => setHeroIdx(i => (i + 1) % HERO_IMAGES.length), 5000)
     return () => clearInterval(t)
   }, [])
@@ -237,7 +240,7 @@ export default function Home() {
                 <div className="absolute bottom-0 left-0 p-4">
                   <p className="flex items-center gap-1.5 text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
                     <MapPin size={11} />
-                    {PROPERTIES.filter(p => p.region === region).length} propiedades
+                    {properties.filter(p => p.region === region).length} propiedades
                   </p>
                   <h3
                     className="text-white font-bold"

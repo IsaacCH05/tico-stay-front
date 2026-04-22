@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Home, PlusCircle, Star, Settings, LogOut, Menu, X,
@@ -6,7 +6,8 @@ import {
   XCircle, Clock, Leaf, MoreVertical, Bell
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { PROPERTIES, ADMIN_STATS, type Property } from '../data/properties'
+import api from '../api'
+import { ADMIN_STATS, type Property } from '../data/properties'
 
 type AdminTab = 'overview' | 'properties' | 'bookings' | 'reviews' | 'settings'
 
@@ -145,7 +146,7 @@ function PropertiesTab({ properties, onDelete }: { properties: Property[]; onDel
           </thead>
           <tbody>
             {filtered.map(p => (
-              <tr key={p.id} className="border-b transition-colors" style={{ borderColor: 'var(--border)' }}
+              <tr key={p.id || p._id} className="border-b transition-colors" style={{ borderColor: 'var(--border)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-subtle)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <td className="px-4 py-3">
@@ -171,7 +172,7 @@ function PropertiesTab({ properties, onDelete }: { properties: Property[]; onDel
                   <div className="flex items-center gap-1">
                     <button className="btn-ghost p-1.5" title="Editar"><Edit2 size={14} /></button>
                     <button className="btn-ghost p-1.5" title="Ver"><Eye size={14} /></button>
-                    <button onClick={() => onDelete(p.id)} className="btn-ghost p-1.5" style={{ color: '#ef4444' }} title="Eliminar">
+                    <button onClick={() => onDelete(p.id || p._id)} className="btn-ghost p-1.5" style={{ color: '#ef4444' }} title="Eliminar">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -189,6 +190,9 @@ function PropertiesTab({ properties, onDelete }: { properties: Property[]; onDel
 }
 
 function BookingsTab() {
+  const [bookings, setBookings] = useState<any[]>([])
+
+  useEffect(() => { api.get('/bookings').then(res => setBookings(res.data)).catch(console.error) }, [])
   return (
     <div className="animate-fade-in">
       <h2 className="text-xl font-bold mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Reservas</h2>
@@ -203,15 +207,15 @@ function BookingsTab() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_BOOKINGS.map(b => (
-              <tr key={b.id} className="border-b transition-colors" style={{ borderColor: 'var(--border)' }}
+            {(bookings.length ? bookings : MOCK_BOOKINGS).map(b => (
+              <tr key={b._id || b.id} className="border-b transition-colors" style={{ borderColor: 'var(--border)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-subtle)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{b.id}</td>
-                <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{b.guest}</td>
-                <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{b.property}</td>
-                <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{b.checkIn}</td>
-                <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{b.checkOut}</td>
+                <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{b._id || b.id}</td>
+                <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{b.guestName || b.guest}</td>
+                <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{b.propertyId?.name || b.property}</td>
+                <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(b.checkIn).toLocaleDateString()}</td>
+                <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(b.checkOut).toLocaleDateString()}</td>
                 <td className="px-4 py-3 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>${b.total}</td>
                 <td className="px-4 py-3"><StatusBadge status={b.status} /></td>
                 <td className="px-4 py-3"><button className="btn-ghost p-1.5"><MoreVertical size={14} /></button></td>
@@ -225,20 +229,28 @@ function BookingsTab() {
 }
 
 function ReviewsTab() {
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS)
-  const approve = (id: string) => setReviews(r => r.map(x => x.id === id ? { ...x, approved: true } : x))
-  const reject  = (id: string) => setReviews(r => r.filter(x => x.id !== id))
+  const [reviews, setReviews] = useState<any[]>(INITIAL_REVIEWS)
+
+  useEffect(() => { 
+    api.get('/reviews').then(res => { if(res.data?.length) setReviews(res.data) }).catch(console.error) 
+  }, [])
+  const approve = async (id: string) => {
+    try { await api.put(`/reviews/${id}`, { approved: true }); setReviews(r => r.map(x => (x.id || x._id) === id ? { ...x, approved: true } : x)) } catch {}
+  }
+  const reject  = async (id: string) => {
+    try { await api.delete(`/reviews/${id}`); setReviews(r => r.filter(x => (x.id || x._id) !== id)) } catch {}
+  }
   return (
     <div className="animate-fade-in">
       <h2 className="text-xl font-bold mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Reseñas</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {reviews.map(r => (
-          <div key={r.id} className="rounded-[var(--radius-lg)] p-5"
+          <div key={r.id || r._id} className="rounded-[var(--radius-lg)] p-5"
             style={{ background: 'var(--bg-card)', border: `1px solid ${r.approved ? 'var(--border)' : 'rgba(233,196,106,0.3)'}`, boxShadow: 'var(--shadow-sm)' }}>
             <div className="flex items-start justify-between gap-2 mb-3">
               <div>
-                <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{r.guest}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.property} · {r.date}</p>
+                <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{r.guestName || r.guest}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.propertyId?.name || r.property} · {new Date(r.date).toLocaleDateString()}</p>
               </div>
               <span style={{ color: 'var(--gold)', fontSize: '0.875rem' }}>{'★'.repeat(r.rating)}</span>
             </div>
@@ -251,8 +263,8 @@ function ReviewsTab() {
               )}
               {!r.approved && (
                 <div className="flex gap-2">
-                  <button onClick={() => approve(r.id)} className="btn-primary text-xs py-1.5 px-3"><CheckCircle size={12} /> Aprobar</button>
-                  <button onClick={() => reject(r.id)} className="btn-secondary text-xs py-1.5 px-3" style={{ borderColor: '#ef4444', color: '#ef4444' }}><XCircle size={12} /> Rechazar</button>
+                  <button onClick={() => approve(r.id || r._id)} className="btn-primary text-xs py-1.5 px-3"><CheckCircle size={12} /> Aprobar</button>
+                  <button onClick={() => reject(r.id || r._id)} className="btn-secondary text-xs py-1.5 px-3" style={{ borderColor: '#ef4444', color: '#ef4444' }}><XCircle size={12} /> Rechazar</button>
                 </div>
               )}
             </div>
@@ -298,7 +310,12 @@ export default function Admin() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [properties, setProperties] = useState<Property[]>(PROPERTIES)
+  const [properties, setProperties] = useState<Property[]>([])
+  
+
+  useEffect(() => {
+    api.get<Property[]>('/properties').then(res => setProperties(res.data)).catch(console.error)
+  }, [])
 
   const handleLogout = () => { logout(); navigate('/') }
   const deleteProperty = (id: string) => setProperties(prev => prev.filter(p => p.id !== id))

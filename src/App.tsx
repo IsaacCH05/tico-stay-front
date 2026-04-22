@@ -7,6 +7,7 @@ import Login      from './pages/Login'
 import Register   from './pages/Register'
 import Properties from './pages/Properties'
 import Admin      from './pages/Admin'
+import PropertyDetail from './pages/PropertyDetail'
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated } = useAuth()
@@ -24,6 +25,7 @@ export default function App() {
             <Route element={<MainLayout />}>
               <Route path="/"            element={<Home />} />
               <Route path="/propiedades" element={<Properties />} />
+              <Route path="/propiedad/:id" element={<PropertyDetail />} />
             </Route>
             <Route element={<AuthLayout />}>
               <Route path="/iniciar-sesion" element={<Login />} />

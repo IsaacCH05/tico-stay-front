@@ -1,20 +1,51 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Star, MapPin, Users, Bed, Bath, Wifi,
   Heart, Share2, Leaf, Calendar, ChevronLeft, ChevronRight, Check
 } from 'lucide-react'
-import { PROPERTIES } from '../data/properties'
+import api from '../api'
+import { useAuth } from '../context/AuthContext'
+import type { Property } from '../data/properties'
 
 export default function PropertyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const property = PROPERTIES.find(p => p.id === id)
+  const { user } = useAuth()
+  
+  const [property, setProperty] = useState<Property | null>(null)
+  const [related, setRelated] = useState<Property[]>([])
   const [imgIdx, setImgIdx] = useState(0)
   const [wishlisted, setWishlisted] = useState(false)
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
   const [guests, setGuests] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [bookingMsg, setBookingMsg] = useState('')
+  const [isBooking, setIsBooking] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    api.get(`/properties/${id}`).then(res => {
+      setProperty(res.data)
+      // fetch related
+      api.get('/properties').then(all => {
+        setRelated(all.data.filter((p: Property) => p.region === res.data.region && (p.id || p._id) !== id).slice(0, 3))
+        setLoading(false)
+      })
+    }).catch(err => {
+      console.error(err)
+      setLoading(false)
+    })
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <p style={{ color: 'var(--text-muted)' }}>Cargando detalles de la propiedad...</p>
+      </div>
+    )
+  }
 
   if (!property) {
     return (
@@ -35,7 +66,37 @@ export default function PropertyDetail() {
     return Math.max(0, Math.floor(diff / 86400000))
   })()
 
-  const related = PROPERTIES.filter(p => p.region === property.region && p.id !== property.id).slice(0, 3)
+  const handleBooking = async () => {
+    if (!user) {
+      alert('Debes iniciar sesión para reservar')
+      navigate('/login')
+      return
+    }
+    if (!checkIn || !checkOut) return alert('Por favor selecciona las fechas')
+    
+    setIsBooking(true)
+    const bookingData = {
+      propertyId: property.id || property._id,
+      guestName: user.name,
+      guestEmail: user.email,
+      checkIn,
+      checkOut,
+      status: 'pending',
+      total: Math.round(property.price * nights * 1.12)
+    }
+
+    try {
+      await api.post('/bookings', bookingData)
+      setBookingMsg('¡Reserva confirmada! Hemos enviado un correo con los detalles.')
+      setCheckIn('')
+      setCheckOut('')
+      setIsBooking(false)
+    } catch (err) {
+      console.error(err)
+      alert('Error procesando reserva')
+      setIsBooking(false)
+    }
+  }
 
   return (
     <main style={{ paddingTop: '4rem', minHeight: '100vh', background: 'var(--bg)' }}>
@@ -250,9 +311,20 @@ export default function PropertyDetail() {
                   </div>
                 </div>
 
-                <button className="btn-primary w-full justify-center py-3 text-base mb-4">
-                  {nights > 0 ? `Reservar — $${(property.price * nights).toLocaleString()}` : 'Reservar ahora'}
+                <button 
+                  onClick={handleBooking} 
+                  disabled={nights === 0 || isBooking} 
+                  className="btn-primary w-full justify-center py-3 text-base mb-4 disabled:opacity-50"
+                  style={{ cursor: nights > 0 && !isBooking ? 'pointer' : 'not-allowed' }}
+                >
+                  {isBooking ? 'Procesando...' : nights > 0 ? `Reservar — $${(Math.round(property.price * nights * 1.12)).toLocaleString()}` : 'Reservar ahora'}
                 </button>
+
+                {bookingMsg && (
+                  <div className="mb-4 p-3 text-sm rounded-[var(--radius-md)]" style={{ background: 'rgba(82,183,136,0.12)', color: 'var(--forest-dark)' }}>
+                    {bookingMsg}
+                  </div>
+                )}
 
                 {nights > 0 && (
                   <div className="space-y-2 text-sm" style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
@@ -305,8 +377,8 @@ export default function PropertyDetail() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {related.map(p => (
                 <Link
-                  key={p.id}
-                  to={`/propiedad/${p.id}`}
+                  key={p.id || p._id}
+                  to={`/propiedad/${p.id || p._id}`}
                   className="group rounded-[var(--radius-lg)] overflow-hidden no-underline card-hover"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
                 >

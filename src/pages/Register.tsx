@@ -4,7 +4,7 @@ import { Eye, EyeOff, Leaf, Mail, Lock, User, AlertCircle, Check } from 'lucide-
 import { useAuth } from '../context/AuthContext'
 
 export default function Register() {
-  const { login } = useAuth()
+  const { register } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [showPass, setShowPass] = useState(false)
@@ -42,7 +42,7 @@ export default function Register() {
     }
     setLoading(true)
     try {
-      await login(form.email, form.password)
+      await register(form.name, form.email, form.password)
       navigate('/')
     } catch {
       setError('Error al crear la cuenta. Intenta de nuevo.')

@@ -145,7 +145,7 @@ export default function PropertyCard({ property, compact = false }: PropertyCard
         )}
 
         <Link
-          to={`/propiedad/${property.id}`}
+          to={`/propiedad/${property.id || property._id}`}
           className="btn-primary w-full justify-center text-sm py-2.5"
           style={{marginTop: 'auto'}}
         >
