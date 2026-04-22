@@ -1,7 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 import type { ReactNode } from 'react'
 import api from '../api'
+
 
 export interface Booking {
   id: string
@@ -81,6 +83,7 @@ function mapBooking(raw: Record<string, unknown>): Booking {
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const { isAuthenticated, user } = useAuth()
   const [notifications, setNotifications] = useState<AdminNotification[]>(() => {
     try { return JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) ?? '[]') } catch { return [] }
   })
@@ -88,13 +91,17 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   // Cargar reservas desde la API al montar
   useEffect(() => {
     const token = localStorage.getItem('tico-token')
-    if (!token) { setLoading(false); return }
+    if (!token || !isAuthenticated) { 
+      setBookings([])
+      setLoading(false)
+      return 
+    }
 
     api.get('/bookings')
       .then(res => setBookings(res.data.map(mapBooking)))
       .catch(err => console.error('Error loading bookings:', err))
       .finally(() => setLoading(false))
-  }, [])
+  }, [isAuthenticated, user?.id])
 
   const persistNotifications = (list: AdminNotification[]) => {
     setNotifications(list)

@@ -561,7 +561,16 @@ export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [reviews, setReviews] = useState<ReviewItem[]>([])
+  
+  const [totalPropsDb, setTotalPropsDb] = useState(PROPERTIES.length)
+
   const notifRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    api.get('/properties')
+      .then(res => setTotalPropsDb(res.data.length))
+      .catch(err => console.error('Error cargando total de propiedades:', err))
+  }, [])
 
   // Cargar reseñas desde la API
   useEffect(() => {
@@ -582,8 +591,10 @@ export default function Admin() {
 
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed')
   const monthlyRevenue    = confirmedBookings.reduce((s, b) => s + b.total, 0)
+  
+  // ACTUALIZADO: Pasamos la variable dinámica en vez de la estática
   const realStats = {
-    totalProperties: PROPERTIES.length,
+    totalProperties: totalPropsDb, 
     activeBookings:  confirmedBookings.length,
     monthlyRevenue,
     occupancyRate:   bookings.length > 0 ? Math.round((confirmedBookings.length / bookings.length) * 100) : 0,

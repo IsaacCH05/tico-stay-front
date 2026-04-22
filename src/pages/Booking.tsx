@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Star, Calendar, Users, Check } from 'lucide-react'
-import { PROPERTIES } from '../data/properties'
+import { PROPERTIES, type Property } from '../data/properties'
 import { useAuth } from '../context/AuthContext'
 import { useBookings } from '../context/BookingContext'
+import api from '../api'
 
 export default function Booking() {
   const { id } = useParams()
@@ -12,14 +13,51 @@ export default function Booking() {
   const { user } = useAuth()
   const { addBooking } = useBookings()
 
-  const property = PROPERTIES.find(p => p.id === id)
   const checkIn  = searchParams.get('checkIn')  ?? ''
   const checkOut = searchParams.get('checkOut') ?? ''
   const guests   = Number(searchParams.get('guests') ?? 1)
 
+  // 1. Buscamos primero en el archivo local
+  const staticProperty = PROPERTIES.find(p => p.id === id) ?? null
+  
+  // 2. Estados para manejar la propiedad (local o de la DB) y la carga
+  const [property, setProperty] = useState<Property | null>(staticProperty)
+  const [loadingProp, setLoadingProp] = useState(!staticProperty)
+
   const [loading,  setLoading]  = useState(false)
   const [success,  setSuccess]  = useState(false)
 
+  // 3. Efecto para buscar en el backend si no se encontró localmente
+  useEffect(() => {
+    if (staticProperty) return
+    api.get(`/properties/${id}`)
+      .then(res => {
+        const raw = res.data
+        setProperty({
+          id: raw._id || raw.id,
+          name: raw.name,
+          image: raw.image,
+          location: raw.location,
+          price: raw.price,
+          rating: raw.rating || 0,
+          reviewCount: raw.reviewCount || 0,
+          type: raw.type
+        } as Property)
+      })
+      .catch(() => setProperty(null))
+      .finally(() => setLoadingProp(false))
+  }, [id, staticProperty])
+
+  // Pantalla de carga mientras busca en la BD
+  if (loadingProp) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ paddingTop: '5rem', background: 'var(--bg)' }}>
+        <p style={{ color: 'var(--text-muted)' }}>Cargando detalles de la propiedad...</p>
+      </div>
+    )
+  }
+
+  // Pantalla de error si definitivamente no existe
   if (!property) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center" style={{ paddingTop: '5rem', background: 'var(--bg)' }}>
@@ -44,28 +82,36 @@ export default function Booking() {
   const fmt = (d: string) =>
     new Date(d + 'T12:00:00').toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })
 
-  const handleConfirm = async () => {
+const handleConfirm = async () => {
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1200))
-    addBooking({
-      propertyId:       property!.id,
-      propertyName:     property!.name,
-      propertyImage:    property!.image,
-      propertyLocation: property!.location,
-      checkIn,
-      checkOut,
-      guests,
-      nights,
-      subtotal,
-      serviceFee,
-      total,
-      status:    'pending',
-      userId:    user!.id,
-      userName:  user!.name,
-      userEmail: user!.email,
-    })
-    setLoading(false)
-    setSuccess(true)
+    try {
+      await new Promise(r => setTimeout(r, 1200))
+      
+      await addBooking({
+        propertyId:       property.id,
+        propertyName:     property.name,
+        propertyImage:    property.image,
+        propertyLocation: property.location,
+        checkIn,
+        checkOut,
+        guests,
+        nights,
+        subtotal,
+        serviceFee,
+        total,
+        status:    'pending',
+        userId:    user!.id,
+        userName:  user!.name,
+        userEmail: user!.email,
+      })
+      
+      setSuccess(true)
+    } catch (error: any) {
+      console.error("Error del servidor:", error)
+      alert("El servidor rechazó la reserva. Revisa la consola de tu backend para ver el error exacto.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (success) {
