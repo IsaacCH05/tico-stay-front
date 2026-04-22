@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Sun, Moon, Menu, X, Leaf, LogOut, Settings, ChevronDown } from 'lucide-react'
+import { Sun, Moon, Menu, X, Leaf, LogOut, Settings, ChevronDown, CalendarDays } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -140,6 +140,16 @@ export default function Navbar() {
                         <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</p>
                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.email}</p>
                       </div>
+                      <Link to="/mis-reservas" onClick={() => setUserMenuOpen(false)} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '9px 14px', fontSize: '0.875rem',
+                        color: 'var(--text-secondary)', textDecoration: 'none',
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.color = 'var(--accent)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                      >
+                        <CalendarDays size={14} /> Mis reservas
+                      </Link>
                       {user.role === 'admin' && (
                         <Link to="/admin" onClick={() => setUserMenuOpen(false)} style={{
                           display: 'flex', alignItems: 'center', gap: '8px',
@@ -234,14 +244,24 @@ export default function Navbar() {
                 {theme === 'dark' ? <><Sun size={16} /> Modo claro</> : <><Moon size={16} /> Modo oscuro</>}
               </button>
               {isAuthenticated ? (
-                <button onClick={handleLogout} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 12px', borderRadius: '8px', border: 'none',
-                  background: 'transparent', cursor: 'pointer',
-                  color: '#ef4444', fontFamily: 'var(--font-body)', fontSize: '0.9rem',
-                }}>
-                  <LogOut size={16} /> Cerrar sesión
-                </button>
+                <>
+                  <Link to="/mis-reservas" onClick={() => setMenuOpen(false)} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 12px', borderRadius: '8px',
+                    color: 'var(--text-secondary)', textDecoration: 'none',
+                    fontFamily: 'var(--font-body)', fontSize: '0.9rem',
+                  }}>
+                    <CalendarDays size={16} /> Mis reservas
+                  </Link>
+                  <button onClick={handleLogout} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 12px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer',
+                    color: '#ef4444', fontFamily: 'var(--font-body)', fontSize: '0.9rem',
+                  }}>
+                    <LogOut size={16} /> Cerrar sesión
+                  </button>
+                </>
               ) : (
                 <>
                   <Link to="/iniciar-sesion" onClick={() => setMenuOpen(false)} style={{

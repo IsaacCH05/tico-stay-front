@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X, ChevronDown, ChevronUp, Grid3X3, List, Search } from 'lucide-react'
 import PropertyCard from '../components/PropertyCard'
 import SearchBar from '../components/SearchBar'
+import { PROPERTIES, REGIONS, type Property } from '../data/properties'
 import api from '../api'
-import { REGIONS, type Property } from '../data/properties'
 
 type SortKey = 'relevance' | 'price-asc' | 'price-desc' | 'rating'
 
@@ -42,15 +42,46 @@ function toggle<T>(arr: T[], val: T): T[] {
   return arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val]
 }
 
+function mapApiProp(raw: Record<string, unknown>): Property {
+  return {
+    id:          (raw._id ?? raw.id) as string,
+    name:        (raw.name ?? '') as string,
+    type:        (raw.type ?? 'villa') as Property['type'],
+    location:    (raw.location ?? '') as string,
+    region:      (raw.region ?? '') as string,
+    price:       (raw.price ?? 0) as number,
+    rating:      (raw.rating ?? 0) as number,
+    reviewCount: (raw.reviewCount ?? 0) as number,
+    image:       (raw.image ?? '') as string,
+    images:      Array.isArray(raw.images) ? raw.images as string[] : [(raw.image ?? '') as string],
+    amenities:   Array.isArray(raw.amenities) ? raw.amenities as string[] : [],
+    description: (raw.description ?? '') as string,
+    featured:    (raw.featured ?? false) as boolean,
+    ecoFriendly: (raw.ecoFriendly ?? false) as boolean,
+    maxGuests:   (raw.maxGuests ?? 2) as number,
+    bedrooms:    (raw.bedrooms ?? 1) as number,
+    bathrooms:   (raw.bathrooms ?? 1) as number,
+  }
+}
+
 export default function Properties() {
   const [searchParams] = useSearchParams()
   const query    = searchParams.get('q') ?? ''
   const regionQP = searchParams.get('region') ?? ''
-  const [properties, setProperties] = useState<Property[]>([])
+
+  const [apiProperties, setApiProperties] = useState<Property[]>([])
 
   useEffect(() => {
-    api.get<Property[]>('/properties').then(res => setProperties(res.data)).catch(console.error);
+    api.get('/properties')
+      .then(res => setApiProperties((res.data as Record<string, unknown>[]).map(mapApiProp)))
+      .catch(() => {})
   }, [])
+
+  // DB properties first, then static ones not already present by name
+  const ALL_PROPERTIES = useMemo(() => {
+    const dbNames = new Set(apiProperties.map(p => p.name.toLowerCase()))
+    return [...apiProperties, ...PROPERTIES.filter(p => !dbNames.has(p.name.toLowerCase()))]
+  }, [apiProperties])
 
   const [filters, setFilters] = useState<Filters>({
     ...DEFAULT_FILTERS,
@@ -67,7 +98,7 @@ export default function Properties() {
     setExpandedSections(s => ({ ...s, [k]: !s[k] }))
 
   const results = useMemo(() => {
-    let list = [...properties]
+    let list = [...ALL_PROPERTIES]
     if (query) {
       const q = query.toLowerCase()
       list = list.filter(p =>
@@ -93,7 +124,7 @@ export default function Properties() {
     if (sort === 'price-desc') list.sort((a, b) => b.price - a.price)
     if (sort === 'rating')     list.sort((a, b) => b.rating - a.rating)
     return list
-  }, [query, filters, sort])
+  }, [query, filters, sort, ALL_PROPERTIES])
 
   const activeFilterCount =
     filters.types.length + filters.regions.length +

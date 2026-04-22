@@ -201,7 +201,7 @@ export const PROPERTIES: Property[] = [
 ]
 
 export const ADMIN_STATS = {
-  totalProperties: 24,
+  totalProperties: 8,
   activeBookings: 87,
   monthlyRevenue: 48320,
   occupancyRate: 73,

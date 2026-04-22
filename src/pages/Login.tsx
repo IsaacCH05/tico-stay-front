@@ -28,15 +28,20 @@ export default function Login() {
 
   const quickLogin = async (role: 'user' | 'admin') => {
     setLoading(true)
-    const e = role === 'admin' ? 'admin@ticostay.cr' : 'user@ticostay.cr'
-    await login(e, '123456', role)
-    navigate(role === 'admin' ? '/admin' : '/')
-    setLoading(false)
+    try {
+      const e = role === 'admin' ? 'admin@ticostay.cr' : 'user@ticostay.cr'
+      await login(e, '123456')
+      navigate(role === 'admin' ? '/admin' : '/')
+    } catch {
+      setError('Error en demo login.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen flex">
-      {/* Left — decorative */}
+      {/* Left — decorativo */}
       <div
         className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center relative overflow-hidden"
         style={{ background: 'linear-gradient(145deg, var(--forest) 0%, var(--forest-mid) 100%)' }}
@@ -51,10 +56,7 @@ export default function Login() {
           <div className="w-16 h-16 rounded-2xl bg-white/15 flex items-center justify-center mx-auto mb-6">
             <Leaf size={32} style={{ color: 'var(--forest-pale)' }} />
           </div>
-          <h1
-            className="text-5xl font-bold text-white mb-4"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <h1 className="text-5xl font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>
             Tico<span style={{ color: 'var(--forest-pale)' }}>Stay</span>
           </h1>
           <p className="text-white/70 text-lg leading-relaxed max-w-sm">
@@ -64,20 +66,20 @@ export default function Login() {
             className="mt-10 p-6 rounded-[var(--radius-xl)]"
             style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
           >
-            <p className="text-white/80 text-sm italic" style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
+            <p className="text-white/80 italic" style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
               "Más de 500 propiedades únicas te esperan en toda Costa Rica."
             </p>
           </div>
         </div>
       </div>
 
-      {/* Right — form */}
+      {/* Right — formulario */}
       <div
         className="w-full lg:w-1/2 flex items-center justify-center p-8"
         style={{ background: 'var(--bg)' }}
       >
         <div className="w-full max-w-md animate-scale-in">
-          {/* Mobile logo */}
+          {/* Logo mobile */}
           <Link to="/" className="flex items-center gap-2 mb-8 lg:hidden no-underline">
             <div className="w-8 h-8 rounded-lg bg-[var(--forest-light)] flex items-center justify-center">
               <Leaf size={16} className="text-white" />
@@ -87,10 +89,7 @@ export default function Login() {
             </span>
           </Link>
 
-          <h2
-            className="text-3xl font-bold mb-1"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
-          >
+          <h2 className="text-3xl font-bold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
             Bienvenido de vuelta
           </h2>
           <p className="mb-8" style={{ color: 'var(--text-muted)' }}>
@@ -107,17 +106,12 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Email */}
             <div>
               <label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: 'var(--text-muted)' }}
-                />
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="email"
                   value={email}
@@ -129,7 +123,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <div className="flex justify-between mb-1.5">
                 <label className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
@@ -140,11 +133,7 @@ export default function Login() {
                 </a>
               </div>
               <div className="relative">
-                <Lock
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: 'var(--text-muted)' }}
-                />
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
                   type={showPass ? 'text' : 'password'}
                   value={password}
@@ -174,7 +163,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Quick demo logins */}
+          {/* Demo rápido */}
           <div className="mt-6">
             <p className="text-xs text-center mb-3" style={{ color: 'var(--text-muted)' }}>
               ─── Demo rápido ───

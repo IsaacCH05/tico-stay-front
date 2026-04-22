@@ -4,45 +4,77 @@ import {
   ArrowLeft, Star, MapPin, Users, Bed, Bath, Wifi,
   Heart, Share2, Leaf, Calendar, ChevronLeft, ChevronRight, Check
 } from 'lucide-react'
-import api from '../api'
+import { PROPERTIES, type Property } from '../data/properties'
 import { useAuth } from '../context/AuthContext'
-import type { Property } from '../data/properties'
+import api from '../api'
+
+function mapApiProp(raw: Record<string, unknown>): Property {
+  return {
+    id:          (raw._id ?? raw.id) as string,
+    name:        (raw.name ?? '') as string,
+    type:        (raw.type ?? 'villa') as Property['type'],
+    location:    (raw.location ?? '') as string,
+    region:      (raw.region ?? '') as string,
+    price:       (raw.price ?? 0) as number,
+    rating:      (raw.rating ?? 0) as number,
+    reviewCount: (raw.reviewCount ?? 0) as number,
+    image:       (raw.image ?? '') as string,
+    images:      Array.isArray(raw.images) ? raw.images as string[] : [(raw.image ?? '') as string],
+    amenities:   Array.isArray(raw.amenities) ? raw.amenities as string[] : [],
+    description: (raw.description ?? '') as string,
+    featured:    (raw.featured ?? false) as boolean,
+    ecoFriendly: (raw.ecoFriendly ?? false) as boolean,
+    maxGuests:   (raw.maxGuests ?? 2) as number,
+    bedrooms:    (raw.bedrooms ?? 1) as number,
+    bathrooms:   (raw.bathrooms ?? 1) as number,
+  }
+}
 
 export default function PropertyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  
-  const [property, setProperty] = useState<Property | null>(null)
-  const [related, setRelated] = useState<Property[]>([])
+  const { isAuthenticated } = useAuth()
+
+  const staticProperty = PROPERTIES.find(p => p.id === id) ?? null
+  const [property, setProperty] = useState<Property | null>(staticProperty)
+  const [loadingProp, setLoadingProp] = useState(!staticProperty)
+
+  useEffect(() => {
+    if (staticProperty) return
+    api.get(`/properties/${id}`)
+      .then(res => setProperty(mapApiProp(res.data as Record<string, unknown>)))
+      .catch(() => setProperty(null))
+      .finally(() => setLoadingProp(false))
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [imgIdx, setImgIdx] = useState(0)
   const [wishlisted, setWishlisted] = useState(false)
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
   const [guests, setGuests] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [bookingMsg, setBookingMsg] = useState('')
-  const [isBooking, setIsBooking] = useState(false)
+  const [bookingError, setBookingError] = useState('')
 
-  useEffect(() => {
-    setLoading(true)
-    api.get(`/properties/${id}`).then(res => {
-      setProperty(res.data)
-      // fetch related
-      api.get('/properties').then(all => {
-        setRelated(all.data.filter((p: Property) => p.region === res.data.region && (p.id || p._id) !== id).slice(0, 3))
-        setLoading(false)
-      })
-    }).catch(err => {
-      console.error(err)
-      setLoading(false)
-    })
-  }, [id])
+  const handleReservar = () => {
+    setBookingError('')
+    if (!checkIn || !checkOut) {
+      setBookingError('Selecciona las fechas de llegada y salida.')
+      return
+    }
+    if (!isAuthenticated) {
+      navigate('/iniciar-sesion', { state: { from: `/propiedad/${id}` } })
+      return
+    }
+    navigate(`/reservar/${id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`)
+  }
 
-  if (loading) {
+  if (loadingProp) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <p style={{ color: 'var(--text-muted)' }}>Cargando detalles de la propiedad...</p>
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 rounded-full mx-auto mb-4 animate-spin"
+            style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }} />
+          <p style={{ color: 'var(--text-muted)' }}>Cargando propiedad…</p>
+        </div>
       </div>
     )
   }
@@ -66,37 +98,7 @@ export default function PropertyDetail() {
     return Math.max(0, Math.floor(diff / 86400000))
   })()
 
-  const handleBooking = async () => {
-    if (!user) {
-      alert('Debes iniciar sesión para reservar')
-      navigate('/login')
-      return
-    }
-    if (!checkIn || !checkOut) return alert('Por favor selecciona las fechas')
-    
-    setIsBooking(true)
-    const bookingData = {
-      propertyId: property.id || property._id,
-      guestName: user.name,
-      guestEmail: user.email,
-      checkIn,
-      checkOut,
-      status: 'pending',
-      total: Math.round(property.price * nights * 1.12)
-    }
-
-    try {
-      await api.post('/bookings', bookingData)
-      setBookingMsg('¡Reserva confirmada! Hemos enviado un correo con los detalles.')
-      setCheckIn('')
-      setCheckOut('')
-      setIsBooking(false)
-    } catch (err) {
-      console.error(err)
-      alert('Error procesando reserva')
-      setIsBooking(false)
-    }
-  }
+  const related = PROPERTIES.filter(p => p.region === property.region && p.id !== property.id).slice(0, 3)
 
   return (
     <main style={{ paddingTop: '4rem', minHeight: '100vh', background: 'var(--bg)' }}>
@@ -311,20 +313,12 @@ export default function PropertyDetail() {
                   </div>
                 </div>
 
-                <button 
-                  onClick={handleBooking} 
-                  disabled={nights === 0 || isBooking} 
-                  className="btn-primary w-full justify-center py-3 text-base mb-4 disabled:opacity-50"
-                  style={{ cursor: nights > 0 && !isBooking ? 'pointer' : 'not-allowed' }}
-                >
-                  {isBooking ? 'Procesando...' : nights > 0 ? `Reservar — $${(Math.round(property.price * nights * 1.12)).toLocaleString()}` : 'Reservar ahora'}
-                </button>
-
-                {bookingMsg && (
-                  <div className="mb-4 p-3 text-sm rounded-[var(--radius-md)]" style={{ background: 'rgba(82,183,136,0.12)', color: 'var(--forest-dark)' }}>
-                    {bookingMsg}
-                  </div>
+                {bookingError && (
+                  <p className="text-xs mb-3 text-center" style={{ color: '#ef4444' }}>{bookingError}</p>
                 )}
+                <button onClick={handleReservar} className="btn-primary w-full justify-center py-3 text-base mb-4">
+                  {nights > 0 ? `Reservar — $${(property.price * nights).toLocaleString()}` : 'Reservar ahora'}
+                </button>
 
                 {nights > 0 && (
                   <div className="space-y-2 text-sm" style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
@@ -377,8 +371,8 @@ export default function PropertyDetail() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {related.map(p => (
                 <Link
-                  key={p.id || p._id}
-                  to={`/propiedad/${p.id || p._id}`}
+                  key={p.id}
+                  to={`/propiedad/${p.id}`}
                   className="group rounded-[var(--radius-lg)] overflow-hidden no-underline card-hover"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
                 >
